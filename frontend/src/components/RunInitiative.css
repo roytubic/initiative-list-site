@@ -1,0 +1,60 @@
+body { 
+    font-family: Arial, sans-serif; 
+    padding: 20px; 
+    margin: 0; 
+    color: white; 
+    position: relative; 
+    height: 100%; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+}
+.container { 
+    position: relative; 
+    background: rgba(0, 0, 0, 0.7); 
+    padding: 20px; 
+    border-radius: 10px; 
+    width: 80%; 
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); 
+}
+.hp-bar {
+    width: 100%;
+    height: 20px;
+    position: relative;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 10px;
+    background: #444; /* Base color for the HP bar */
+}
+.hp {
+    height: 100%;
+    background: green;
+    transition: width 0.5s;
+    position: absolute;
+    left: 0;
+}
+.temp-hp {
+    height: 100%;
+    background: yellow;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    transition: width 0.5s;
+}
+.negative-temp-hp {
+    height: 100%;
+    background: blue;
+    position: absolute;
+    bottom: 0;
+    right: 0; /* Start from the right */
+}
+.creature-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1; /* Send image to the back */
+    background-size: cover;
+    background-position: center;
+}
