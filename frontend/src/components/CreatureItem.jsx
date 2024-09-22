@@ -1,18 +1,30 @@
 import React, { useState } from 'react';
 
-const CreatureItem = ({ creature, onUpdate }) => {
-    const [currentHP, setCurrentHP] = useState(creature.health);
-    const [tempHP, setTempHP] = useState(creature.tempHP);
-    const [tempHPInput, setTempHPInput] = useState(creature.tempHP);
+const CreatureItem = ({ creature, onUpdate, onRemove }) => {
+    const defaultCreature = {
+        health: 0,
+        tempHP: 0,
+        otherInfo: '',
+        conditions: [],
+        ac: 0,
+        alignment: 'Neutral',
+    };
+
+    const currentCreature = creature || defaultCreature;
+
+    const [currentHP, setCurrentHP] = useState(currentCreature.health);
+    const [tempHP, setTempHP] = useState(currentCreature.tempHP);
+    const [tempHPInput, setTempHPInput] = useState(currentCreature.tempHP);
     const [deathSaves, setDeathSaves] = useState({ passes: 0, fails: 0 });
-    const [otherInfo, setOtherInfo] = useState(creature.otherInfo);
-    const [conditions, setConditions] = useState(creature.conditions);
-    const [armorClass, setArmorClass] = useState(creature.ac); // Track AC
+    const [otherInfo, setOtherInfo] = useState(currentCreature.otherInfo);
+    const [conditions, setConditions] = useState(currentCreature.conditions || []);
+    const [armorClass, setArmorClass] = useState(currentCreature.ac);
+    const [alignment, setAlignment] = useState(currentCreature.alignment);
 
     const handleHPChange = (e) => {
         const newHP = Math.max(0, Number(e.target.value)); // Ensure HP is not negative
         setCurrentHP(newHP);
-        onUpdate({ ...creature, health: newHP }); // Update the creature's health
+        onUpdate({ ...currentCreature, health: newHP }); // Update the creature's health
     };
 
     const handleTempHPChange = (e) => {
@@ -22,9 +34,8 @@ const CreatureItem = ({ creature, onUpdate }) => {
 
     const handleTempHPBlur = () => {
         setTempHP(tempHPInput); // Update state when input loses focus
+        let newTotalHP = currentCreature.totalHealth;
 
-        // Calculate the new total HP based on temporary HP
-        let newTotalHP = creature.totalHealth;
         if (tempHPInput < 0) {
             newTotalHP += tempHPInput; // Subtract from total HP if temp HP is negative
         } else if (tempHPInput >= 0 && tempHP < 0) {
@@ -32,13 +43,13 @@ const CreatureItem = ({ creature, onUpdate }) => {
         }
 
         // Update the state and notify the parent component
-        onUpdate({ ...creature, tempHP: tempHPInput, totalHealth: newTotalHP });
+        onUpdate({ ...currentCreature, tempHP: tempHPInput, totalHealth: newTotalHP });
     };
 
     const handleACChange = (e) => {
         const newAC = Math.max(0, Number(e.target.value)); // Ensure AC is not negative
         setArmorClass(newAC);
-        onUpdate({ ...creature, ac: newAC }); // Update the creature's AC
+        onUpdate({ ...currentCreature, ac: newAC }); // Update the creature's AC
     };
 
     const handleDeathSaveChange = (type) => {
@@ -49,7 +60,7 @@ const CreatureItem = ({ creature, onUpdate }) => {
                 [type]: newCount,
             };
         });
-        onUpdate({ ...creature, deathSaves }); // Update death saves
+        onUpdate({ ...currentCreature, deathSaves }); // Update death saves
     };
 
     const handleConditionChange = (condition) => {
@@ -58,18 +69,22 @@ const CreatureItem = ({ creature, onUpdate }) => {
                 ? prev.filter((c) => c !== condition)
                 : [...prev, condition]
         );
-        onUpdate({ ...creature, conditions }); // Update conditions
+        onUpdate({ ...currentCreature, conditions }); // Update conditions
     };
 
     const handleOtherInfoChange = (e) => {
         const newInfo = e.target.value;
         setOtherInfo(newInfo);
-        onUpdate({ ...creature, otherInfo: newInfo }); // Update other info
+        onUpdate({ ...currentCreature, otherInfo: newInfo }); // Update other info
+    };
+
+    const handleRemove = () => {
+        onRemove(currentCreature.name); // Call the remove function passed from parent
     };
 
     return (
         <div className="creature-item" style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-            <span>Initiative: {creature.initiative} | {creature.name} | </span>
+            <span>Initiative: {currentCreature.initiative} | {currentCreature.name} | </span>
             <div style={{ marginLeft: '10px' }}>
                 <strong>AC:</strong>
                 <input
@@ -87,7 +102,7 @@ const CreatureItem = ({ creature, onUpdate }) => {
                     onChange={handleHPChange}
                     style={{ width: '60px', marginLeft: '5px' }}
                 />
-                /{creature.totalHealth}
+                /{currentCreature.totalHealth}
             </div>
             <div style={{ marginLeft: '10px' }}>
                 <strong>Temp HP:</strong>
@@ -95,7 +110,7 @@ const CreatureItem = ({ creature, onUpdate }) => {
                     type="number"
                     value={tempHPInput}
                     onChange={handleTempHPChange}
-                    onBlur={handleTempHPBlur} // Update total HP on blur
+                    onBlur={handleTempHPBlur}
                     style={{ width: '60px', marginLeft: '5px' }}
                 />
             </div>
@@ -136,6 +151,7 @@ const CreatureItem = ({ creature, onUpdate }) => {
                     style={{ width: '150px', marginLeft: '5px' }}
                 />
             </div>
+            <button onClick={handleRemove} style={{ marginLeft: '10px', background: 'red', color: 'white' }}>X</button>
         </div>
     );
 };

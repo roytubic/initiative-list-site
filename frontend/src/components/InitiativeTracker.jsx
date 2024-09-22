@@ -10,12 +10,10 @@ const InitiativeTracker = () => {
         setCreatures((prev) => {
             const existingCreatureIndex = prev.findIndex(c => c.name === creature.name);
             if (existingCreatureIndex !== -1) {
-                // If the creature exists, replace it with the new one
                 const updatedCreatures = [...prev];
                 updatedCreatures[existingCreatureIndex] = creature;
                 return updatedCreatures.sort((a, b) => b.initiative - a.initiative);
             }
-            // If it does not exist, add the new creature
             const updatedCreatures = [...prev, creature];
             return updatedCreatures.sort((a, b) => b.initiative - a.initiative);
         });
@@ -29,10 +27,18 @@ const InitiativeTracker = () => {
         });
     };
 
+    const handleRemove = (name) => {
+        setCreatures((prev) => prev.filter(creature => creature.name !== name));
+    };
+
     return (
         <div>
             <CreatureForm addCreature={addCreature} />
-            <CreatureList creatures={creatures} onUpdate={handleUpdate} />
+            <CreatureList 
+                creatures={creatures} 
+                onUpdate={handleUpdate} 
+                onRemove={handleRemove} // Pass down the remove function
+            />
             <RunInitiative creatures={creatures} />
         </div>
     );

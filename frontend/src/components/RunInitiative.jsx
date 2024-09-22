@@ -47,21 +47,6 @@ const RunInitiative = ({ creatures }) => {
                             position: absolute;
                             left: 0;
                         }
-                        .temp-hp {
-                            height: 100%;
-                            background: yellow;
-                            position: absolute;
-                            bottom: 0;
-                            left: 0;
-                            transition: width 0.5s;
-                        }
-                        .negative-temp-hp {
-                            height: 100%;
-                            background: blue;
-                            position: absolute;
-                            bottom: 0;
-                            right: 0; /* Start from the right */
-                        }
                         .creature-image {
                             position: absolute;
                             top: 0;
@@ -78,11 +63,8 @@ const RunInitiative = ({ creatures }) => {
                     <div class="creature-image"></div>
                     <div class="container">
                         <h2></h2>
-                        <div class="hp-bar">
+                        <div class="hp-bar" style="display: none;">
                             <div class="hp"></div>
-                            <div class="hp" style="background: red;"></div>
-                            <div class="negative-temp-hp"></div>
-                            <div class="temp-hp"></div>
                         </div>
                         <h3></h3>
                         <button id="next-btn">Next</button>
@@ -99,19 +81,29 @@ const RunInitiative = ({ creatures }) => {
 
                             // Calculate widths for the HP bar
                             const greenWidth = (currentHP / totalHealth) * 100;
-                            const redWidth = ((totalHealth - currentHP) / totalHealth) * 100;
-                            const blueWidth = (tempHP < 0 ? (-tempHP / totalHealth) * 100 : 0);
-                            const yellowWidth = (tempHP > 0 ? (tempHP / totalHealth) * 100 : 0);
 
                             document.querySelector('.creature-image').style.backgroundImage = 'url("/creatureimages/' + creature.name + '.jpg")';
                             document.querySelector('h2').innerText = creature.name;
-                            document.querySelector('h3').innerText = 'Current HP:' + currentHP + ' / ' + totalHealth + (tempHP > 0 && tempHP !== undefined ? ' (' + tempHP + ')' : '');
-                            
-                            document.querySelector('.hp').style.width = greenWidth + '%';
-                            document.querySelector('.hp:last-of-type').style.width = redWidth + '%';
-                            document.querySelector('.negative-temp-hp').style.width = blueWidth + '%';
-                            document.querySelector('.temp-hp').style.width = yellowWidth + '%';
 
+                            // Determine what to display based on alignment
+                            let hpText = '';
+                            const hpBar = document.querySelector('.hp-bar');
+
+                            if (creature.alignment === 'Good') {
+                                hpBar.style.display = 'block'; // Show HP bar
+                                hpBar.querySelector('.hp').style.width = greenWidth + '%';
+                            } else {
+                                hpBar.style.display = 'none'; // Hide HP bar for non-good alignments
+                            }
+
+
+                            if (creature.type === 'PC') {
+                                hpText = 'Current HP: ' + currentHP + ' / ' + totalHealth + (tempHP > 0 ? ' (' + tempHP + ')' : '');
+                            } else {
+                                hpText = ''
+                            }
+
+                            document.querySelector('h3').innerText = hpText;
                         }
 
                         document.getElementById('next-btn').onclick = function() {
