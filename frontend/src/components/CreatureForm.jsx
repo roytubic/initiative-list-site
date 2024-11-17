@@ -17,6 +17,10 @@ const CreatureForm = ({ addCreature }) => {
         { name: 'Velaren', health: 54, ac: 17 },
         { name: 'Venstina', health: 60, ac: 16 },
         { name: 'Wulrash', health: 42, ac: 17 },
+        { name: 'Therrin', health:29,  ac:18},
+        { name: 'PC1', health:29,  ac:18},
+        { name: 'PC2', health:29,  ac:18},
+        { name: 'PC3', health:29,  ac:18}
     ];
 
     const npcs = [
