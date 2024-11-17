@@ -25,6 +25,7 @@ const RunInitiative = ({ creatures }) => {
                                 background-image: url("/Background/goldrush.gif"); /* Set background GIF */
                                 background-size: cover;
                                 background-position: center;
+                                text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
                             }
                             .container { 
                                 display: flex;
@@ -81,7 +82,6 @@ const RunInitiative = ({ creatures }) => {
                                 background-size: cover;
                                 background-position: center;
                                 margin-bottom: 10px;
-                                border: 3px solid #3e2723; /* Charcoal border color */
                             }
                         </style>
                     </head>
