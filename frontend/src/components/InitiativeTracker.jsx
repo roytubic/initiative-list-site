@@ -31,6 +31,11 @@ const InitiativeTracker = () => {
         setCreatures((prev) => prev.filter(creature => creature.name !== name));
     };
 
+    const updatePopupCreature = (updatedCreature) => {
+        console.log("Popup creature updated:", updatedCreature);
+        // Here you can add any additional logic if needed
+    };
+
     return (
         <div>
             <CreatureForm addCreature={addCreature} />
@@ -39,7 +44,7 @@ const InitiativeTracker = () => {
                 onUpdate={handleUpdate} 
                 onRemove={handleRemove} // Pass down the remove function
             />
-            <RunInitiative creatures={creatures} />
+            <RunInitiative creatures={creatures} updatePopupCreature={updatePopupCreature}/>
         </div>
     );
 };

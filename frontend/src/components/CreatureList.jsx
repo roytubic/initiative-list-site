@@ -4,9 +4,9 @@ import CreatureItem from './CreatureItem';
 const CreatureList = ({ creatures, onUpdate, onRemove }) => {
     return (
         <div>
-            {creatures.map((creature, index) => (
+            {creatures.map((creature) => (
                 <CreatureItem
-                    key={`${creature.name}-${creature.initiative}`} // Ensure uniqueness
+                    key={creature.name}
                     creature={creature}
                     onUpdate={onUpdate}
                     onRemove={onRemove} // Pass the remove function
@@ -17,3 +17,4 @@ const CreatureList = ({ creatures, onUpdate, onRemove }) => {
 };
 
 export default CreatureList;
+

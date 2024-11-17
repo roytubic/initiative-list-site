@@ -2,11 +2,13 @@
     "name": "dnd-initiative-tracker",
     "version": "1.0.0",
     "scripts": {
-      "serve": "node backend/server.js",
-      "start": "npm start --prefix frontend",
-      "build": "npm run build --prefix frontend"
+        "serve": "node backend/server.js",
+        "start": "npm start --prefix frontend",
+        "build": "npm run build --prefix frontend"
     },
-    "devDependencies": {},
-    "dependencies": {}
-  }
-  
+    "dependencies": {
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "react-scripts": "^5.0.1"
+    }
+}

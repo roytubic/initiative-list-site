@@ -1,130 +1,177 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 
 const RunInitiative = ({ creatures }) => {
+    const newWindowRef = useRef(null);
+
     const openNewWindow = () => {
-        const newWindow = window.open("", "_blank", "width=600,height=400");
+        if (!newWindowRef.current || newWindowRef.current.closed) {
+            newWindowRef.current = window.open("", "_blank", "width=500,height=500");
 
-        let currentIndex = 0; // Initialize the current index
-
-        // Write the HTML content
-        newWindow.document.write(`
-            <html>
-                <head>
-                    <title>Initiative Tracker</title>
-                    <style>
-                        body { 
-                            font-family: Arial, sans-serif; 
-                            padding: 20px; 
-                            margin: 0; 
-                            color: white; 
-                            position: relative; 
-                            height: 100%; 
-                            display: flex; 
-                            justify-content: center; 
-                            align-items: center; 
-                        }
-                        .container { 
-                            position: relative; 
-                            background: rgba(0, 0, 0, 0.7); 
-                            padding: 20px; 
-                            border-radius: 10px; 
-                            width: 80%; 
-                            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); 
-                        }
-                        .hp-bar {
-                            width: 100%;
-                            height: 20px;
-                            position: relative;
-                            border-radius: 5px;
-                            overflow: hidden;
-                            margin-top: 10px;
-                            background: #444; /* Base color for the HP bar */
-                        }
-                        .hp {
-                            height: 100%;
-                            background: green;
-                            transition: width 0.5s;
-                            position: absolute;
-                            left: 0;
-                        }
-                        .creature-image {
-                            position: absolute;
-                            top: 0;
-                            left: 0;
-                            width: 100%;
-                            height: 100%;
-                            z-index: -1; /* Send image to the back */
-                            background-size: cover;
-                            background-position: center;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="creature-image"></div>
-                    <div class="container">
-                        <h2></h2>
-                        <div class="hp-bar" style="display: none;">
-                            <div class="hp"></div>
+            newWindowRef.current.document.write(`
+                <html>
+                    <head>
+                        <title>Initiative Tracker</title>
+                        <style>
+                            body { 
+                                font-family: Arial, sans-serif;
+                                padding: 0;
+                                margin: 0;
+                                color: #f4e7c3; /* Light earthy tone for fantasy theme */
+                                display: flex;
+                                justify-content: center;
+                                align-items: center;
+                                height: 100vh;
+                                overflow: hidden;
+                                background-image: url("/Background/goldrush.gif"); /* Set background GIF */
+                                background-size: cover;
+                                background-position: center;
+                            }
+                            .container { 
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                padding: 20px;
+                                border-radius: 10px;
+                                width: 90%;
+                                max-width: 400px;
+                                text-align: center;
+                            }
+                            .hp-bar-container {
+                                display: none; /* Initially hidden */
+                                width: 100%;
+                                margin-top: 10px;
+                            }
+                            .hp-bar {
+                                width: 100%;
+                                height: 15px;
+                                background: #6d4c41; /* Earthy background color */
+                                border-radius: 5px;
+                                overflow: hidden;
+                                position: relative;
+                            }
+                            .hp {
+                                height: 100%;
+                                background: #8bc34a; /* Toned-down green for health */
+                                transition: width 0.5s;
+                                position: absolute;
+                                left: 0;
+                            }
+                            .temp-hp {
+                                height: 100%;
+                                background: #ffb74d; /* Muted yellow for temp HP */
+                                position: absolute;
+                                bottom: 0;
+                                left: 0;
+                                transition: width 0.5s;
+                            }
+                            #next-btn {
+                                margin-top: 15px;
+                                padding: 10px 20px;
+                                background: #8c7b75; /* Earthy button color */
+                                color: white;
+                                border: none;
+                                border-radius: 5px;
+                                cursor: pointer;
+                            }
+                            .creature-image {
+                                width: 250px;
+                                height: 250px;
+                                border-radius: 50%;
+                                object-fit: cover;
+                                background-size: cover;
+                                background-position: center;
+                                margin-bottom: 10px;
+                                border: 3px solid #3e2723; /* Charcoal border color */
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="container">
+                            <div class="creature-image" id="creature-image"></div>
+                            <h2 id="creature-name"></h2>
+                            <div class="hp-bar-container" id="hp-bar-container">
+                                <div class="hp-bar">
+                                    <div class="hp" id="current-hp"></div>
+                                    <div class="temp-hp" id="temp-hp"></div>
+                                </div>
+                                <h3 id="hp-text"></h3>
+                            </div>
+                            <button id="next-btn">Next</button>
                         </div>
-                        <h3></h3>
-                        <button id="next-btn">Next</button>
-                    </div>
-                    <script>
-                        let currentIndex = ${currentIndex}; // Initialize index
-                        const creatures = ${JSON.stringify(creatures)};
+                        <script>
+                            let currentIndex = 0;
+                            let creatures = ${JSON.stringify(creatures)};
 
-                        function updateDisplay() {
-                            const creature = creatures[currentIndex]; // Get the current creature
-                            const currentHP = creature.health;
-                            const totalHealth = creature.totalHealth;
-                            const tempHP = creature.tempHP;
+                            window.addEventListener('message', (event) => {
+                                if (event.data.type === 'UPDATE_CREATURES') {
+                                    creatures = event.data.creatures;
+                                    updateDisplay();
+                                }
+                            });
 
-                            // Calculate widths for the HP bar
-                            const greenWidth = (currentHP / totalHealth) * 100;
+                            function updateDisplay() {
+                                if (!creatures || creatures.length === 0) return;
 
-                            document.querySelector('.creature-image').style.backgroundImage = 'url("/creatureimages/' + creature.name + '.jpg")';
-                            document.querySelector('h2').innerText = creature.name;
+                                const creature = creatures[currentIndex];
+                                if (!creature) return;
 
-                            // Determine what to display based on alignment
-                            let hpText = '';
-                            const hpBar = document.querySelector('.hp-bar');
+                                const isGood = creature.alignment === "Good";
 
-                            if (creature.alignment === 'Good') {
-                                hpBar.style.display = 'block'; // Show HP bar
-                                hpBar.querySelector('.hp').style.width = greenWidth + '%';
-                            } else {
-                                hpBar.style.display = 'none'; // Hide HP bar for non-good alignments
+                                const creatureImage = document.getElementById('creature-image');
+                                const creatureName = document.getElementById('creature-name');
+                                const hpBarContainer = document.getElementById('hp-bar-container');
+                                const currentHP = document.getElementById('current-hp');
+                                const tempHP = document.getElementById('temp-hp');
+                                const hpText = document.getElementById('hp-text');
+
+                                creatureImage.style.backgroundImage = 'url("/creatureimages/' + creature.name.replace(/ \\d+$/, "") + '.png")';
+                                creatureName.innerText = creature.name;
+
+                                if (isGood) {
+                                    const greenWidth = (creature.health / creature.totalHealth) * 100;
+                                    const tempHPWidth = creature.tempHP > 0 ? (creature.tempHP / creature.totalHealth) * 100 : 0;
+
+                                    hpBarContainer.style.display = "block"; // Show health info
+                                    currentHP.style.width = greenWidth + "%";
+                                    tempHP.style.width = tempHPWidth + "%";
+                                    hpText.innerText = 'Current HP: ' + creature.health + ' / ' + creature.totalHealth + (creature.tempHP > 0 ? ' (' + creature.tempHP + ')' : '');
+                                } else {
+                                    hpBarContainer.style.display = "none"; // Hide health info
+                                    hpText.innerText = ""; // Clear HP text
+                                }
                             }
 
+                            document.getElementById('next-btn').onclick = function() {
+                                currentIndex = (currentIndex + 1) % creatures.length;
+                                updateDisplay();
+                            };
 
-                            if (creature.type === 'PC') {
-                                hpText = 'Current HP: ' + currentHP + ' / ' + totalHealth + (tempHP > 0 ? ' (' + tempHP + ')' : '');
-                            } else {
-                                hpText = ''
-                            }
-
-                            document.querySelector('h3').innerText = hpText;
-                        }
-
-                        document.getElementById('next-btn').onclick = function() {
-                            console.log('Next button clicked. Current Index:', currentIndex);
-                            currentIndex++;
-                            if (currentIndex >= creatures.length) {
-                                currentIndex = 0; // Reset to first creature
-                            }
-                            console.log('Updating display for:', creatures[currentIndex]);
                             updateDisplay();
-                        };
+                        </script>
+                    </body>
+                </html>
+            `);
 
-                        // Initial display update
-                        updateDisplay();
-                    </script>
-                </body>
-            </html>
-        `);
-
-        newWindow.document.close(); // Ensure the document is closed after writing
+            newWindowRef.current.document.close();
+        }
     };
+
+    useEffect(() => {
+        if (newWindowRef.current && !newWindowRef.current.closed) {
+            newWindowRef.current.postMessage({
+                type: 'UPDATE_CREATURES',
+                creatures: creatures
+            }, '*');
+        }
+    }, [creatures]);
+
+    useEffect(() => {
+        return () => {
+            if (newWindowRef.current) {
+                newWindowRef.current.close();
+            }
+        };
+    }, []);
 
     return (
         <div>
