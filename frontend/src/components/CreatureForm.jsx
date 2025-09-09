@@ -1,203 +1,197 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from "react";
+
+const API_BASE = (() => {
+  if (typeof window === "undefined") return "";
+  const p = window.location.port;
+  if (p === "3001" || p === "5173") return "http://localhost:3000";
+  return ""; // same-origin
+})();
+
+async function getJson(url) {
+  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  if (!res.ok) throw new Error(`GET ${url} -> ${res.status}`);
+  return res.json();
+}
 
 export default function CreatureForm({ addCreatures }) {
-  const [selectedCharacter, setSelectedCharacter] = useState('');
-  const [selectedNPC, setSelectedNPC] = useState('');
-  const [selectedMonster, setSelectedMonster] = useState('');
-  const [initiative, setInitiative] = useState('');
-  const [name, setName] = useState('');
-  const [health, setHealth] = useState('');
-  const [alignment, setAlignment] = useState('Good');
-  const [quantity, setQuantity] = useState(1);
+  const [pcs, setPcs] = useState([]);
+  const [npcs, setNpcs] = useState([]);
+  const [monsters, setMonsters] = useState([]);
 
-  const characters = [
-    { name: 'Jeff', health: 75 },
-    { name: 'Tel', health: 53 },
-    { name: 'Elion', health: 42 },
-    { name: 'Gurdil', health: 54 },
-    { name: 'Hugo', health: 60 },
-    { name: 'Jhaz', health: 52 }
-  ];
+  const [type, setType] = useState("PC"); // 'PC' | 'NPC' | 'Monster'
+  const [qty, setQty] = useState(1);
+  const [initiative, setInitiative] = useState("");
+  const [nameOverride, setNameOverride] = useState("");
+  const [hpOverride, setHpOverride] = useState("");
+  const [alignment, setAlignment] = useState("Good");
+  const [selectedId, setSelectedId] = useState("");
 
-  const npcs = [
-    { name: 'Dwarf (m)', health: null },
-    { name: 'Fire Genasi (M)', health: null },
-    { name: 'Gav', health: null },
-    { name: 'Martith', health: null },
-    { name: 'Half-elf (F)', health: null },
-    { name: 'Lionin (M)', health: null },
-    { name: 'Yuan-ti (f)', health: 66 },
-    { name: 'Zombie', health: 11 }
-  ];
+  // Defaults for alignment by type:
+  // PC -> Good, NPC -> Good (green), Monster -> Evil
+  useEffect(() => {
+    if (type === "Monster") setAlignment("Evil");
+    else if (type === "NPC") setAlignment("Good");
+    else setAlignment("Good");
+    setSelectedId("");
+  }, [type]);
 
-  const monsters = [
-    { name: 'Wolf', health: 11 },
-    { name: 'Bandit Captain', health: 65 },
-    { name: 'Banshee', health: 58 },
-    { name: 'Bearded devil', health: 52 },
-    { name: 'Chain devil', health: 85 },
-    { name: 'Beholder', health: 180 },
-    { name: 'Black Pudding', health: 85 },
-    { name: 'Blue Slaad', health: 123 },
-    { name: 'Bugbear', health: 27 },
-    { name: 'Bulette', health: 94 },
-    { name: 'Chuul', health: 93 },
-    { name: 'Dire Wolverine', health: null },
-    { name: 'Ettin', health: 85 },
-    { name: 'Flame Skull', health: 40 },
-    { name: 'Frost Elemental', health: 114 },
-    { name: 'Frost Giant', health: 138 },
-    { name: 'Ghast', health: 36 },
-    { name: 'Giant Moth', health: null },
-    { name: 'Green Slaad', health: 127 },
-    { name: 'Harpy', health: 38 },
-    { name: 'Hobgoblin', health: 11 },
-    { name: 'Ice Armour', health: 65 },
-    { name: 'Ice Golem', health: 50 },
-    { name: 'Ice Mephit', health: 21 },
-    { name: 'Jetad the White', health: null },
-    { name: 'Lurse', health: null },
-    { name: 'Mind Witness', health: 75 },
-    { name: 'Phase Spider', health: 32 },
-    { name: 'Poltergiest', health: null },
-    { name: 'Red Slaad', health: 93 },
-    { name: 'Ripterror', health: null },
-    { name: 'Rock Worm', health: null },
-    { name: 'Skeleton', health: 13 },
-    { name: 'Spined Devil', health: 22 },
-    { name: 'Thief', health: null },
-    { name: "Ula'ree soldier", health: null },
-    { name: 'VS Arcanist', health: null },
-    { name: 'VS Spy', health: null },
-    { name: 'VS Swordsman', health: null },
-    { name: 'White Wrymling', health: 32 },
-    { name: 'Wight', health: 45 },
-    { name: 'Yeti', health: 51 },
-    { name: 'Zombie Ogre', health: 85 },
-    { name: 'Zombie', health: 22 },
-    { name: 'Lord Jenthril', health: 55 },
-    { name: 'Sprite', health: 7 },
-    { name: 'Shadowling', health: 22 }
-  ];
+  useEffect(() => {
+    (async () => {
+      try {
+        const [pcRows, npcRows, monsterRows] = await Promise.all([
+          getJson(`${API_BASE}/api/catalog/PC`),
+          getJson(`${API_BASE}/api/catalog/NPC`),
+          getJson(`${API_BASE}/api/catalog/Monster`),
+        ]);
+        setPcs(pcRows);
+        setNpcs(npcRows);
+        setMonsters(monsterRows);
+      } catch (e) {
+        console.error("Catalog fetch failed:", e);
+      }
+    })();
+  }, []);
 
-  const handlePCChange = (e) => {
-    const character = characters.find((x) => x.name === e.target.value);
-    if (character) {
-      setSelectedCharacter(character.name);
-      setSelectedNPC('');
-      setSelectedMonster('');
-      setName(character.name);
-      setHealth(character.health ?? '');
-      setAlignment('Good');
-    }
-  };
+  const list = useMemo(() => {
+    return type === "PC" ? pcs : type === "NPC" ? npcs : monsters;
+  }, [type, pcs, npcs, monsters]);
 
-  const handleNPCChange = (e) => {
-    const npc = npcs.find((x) => x.name === e.target.value);
-    if (npc) {
-      setSelectedNPC(npc.name);
-      setSelectedCharacter('');
-      setSelectedMonster('');
-      setName(npc.name);
-      setHealth(npc.health ?? '');
-      setAlignment('Good');
-    }
-  };
+  const selected = useMemo(
+    () => list.find((r) => String(r.id) === String(selectedId)) || null,
+    [list, selectedId]
+  );
 
-  const handleMonsterChange = (e) => {
-    const m = monsters.find((x) => x.name === e.target.value);
-    if (m) {
-      setSelectedMonster(m.name);
-      setSelectedCharacter('');
-      setSelectedNPC('');
-      setName(m.name);
-      setHealth(m.health ?? '');
-      setAlignment('Bad');
-    }
-  };
+  const onAdd = () => {
+    if (!selected && !nameOverride.trim()) return;
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    // Validate to guarantee we pass a valid proto
-    const init = Number(initiative);
-    const hp = health === '' || health == null ? null : Number(health);
-    if (!name || Number.isNaN(init)) {
-      alert('Please choose a creature and enter initiative.');
-      return;
-    }
+    const baseName = (nameOverride || "").trim() || selected.name;
+    const defaultHealth =
+      (hpOverride || "").trim() !== ""
+        ? Number(hpOverride)
+        : selected?.default_health ?? null;
 
     const proto = {
-      initiative: init,
-      name: name.trim(),
-      health: hp == null ? 0 : hp,
-      totalHealth: hp == null ? Math.max(1, 1) : Math.max(1, hp),
-      type: selectedCharacter ? 'PC' : 'NPC',
-      alignment
+      id: crypto.randomUUID(),
+      name: baseName,
+      type,          // 'PC' | 'NPC' | 'Monster'
+      alignment,     // 'Good' | 'Neutral' | 'Evil'
+      initiative: initiative === "" ? 0 : Number(initiative),
+      totalHealth:
+        defaultHealth === null || Number.isNaN(defaultHealth)
+          ? undefined
+          : Number(defaultHealth),
+      health:
+        defaultHealth === null || Number.isNaN(defaultHealth)
+          ? 0
+          : Number(defaultHealth),
+      tempHP: 0,
+      conditions: [],
     };
 
-    const qty = Math.max(1, Math.min(20, Number(quantity) || 1));
     addCreatures(proto, qty);
 
-    // reset minimal fields
-    setSelectedCharacter('');
-    setSelectedNPC('');
-    setSelectedMonster('');
-    setInitiative('');
-    setName('');
-    setHealth('');
-    setAlignment('Good');
-    setQuantity(1);
+    setNameOverride("");
+    setHpOverride("");
+    setInitiative("");
+    setQty(1);
+  };
+
+  const field = {
+    padding: "6px 8px",
+    borderRadius: 8,
+    border: "1px solid rgba(255,255,255,0.18)",
+    background: "rgba(255, 255, 255, 0.57)",
+    color: "#1a1a1aff",
+    outline: "none",
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-      <select value={selectedCharacter} onChange={handlePCChange}>
-        <option value="">Select a PC</option>
-        {characters.map((c) => (
-          <option key={c.name} value={c.name}>{c.name}</option>
-        ))}
-      </select>
+    <div style={{ display: "grid", gap: 8 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(8, auto)",
+          gap: 8,
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          style={field}
+        >
+          <option value="PC">Select a PC</option>
+          <option value="NPC">Select an NPC</option>
+          <option value="Monster">Select a Monster</option>
+        </select>
 
-      <select value={selectedNPC} onChange={handleNPCChange}>
-        <option value="">Select an NPC</option>
-        {npcs.map((n) => (
-          <option key={n.name} value={n.name}>{n.name}</option>
-        ))}
-      </select>
+        <select
+          value={selectedId}
+          onChange={(e) => setSelectedId(e.target.value)}
+          style={field}
+        >
+          <option value="">— Choose —</option>
+          {list.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.name} {o.default_health != null ? `(${o.default_health} HP)` : ""}
+            </option>
+          ))}
+        </select>
 
-      <select value={selectedMonster} onChange={handleMonsterChange}>
-        <option value="">Select a Monster</option>
-        {monsters.map((m) => (
-          <option key={m.name} value={m.name}>{m.name}</option>
-        ))}
-      </select>
+        <input
+          value={initiative}
+          onChange={(e) => setInitiative(e.target.value)}
+          placeholder="Init"
+          style={{ ...field, width: 70 }}
+        />
+        <input
+          value={qty}
+          onChange={(e) =>
+            setQty(Math.max(1, Math.min(20, Number(e.target.value) || 1)))
+          }
+          type="number"
+          min={1}
+          max={20}
+          style={{ ...field, width: 60 }}
+        />
+        <input
+          value={nameOverride}
+          onChange={(e) => setNameOverride(e.target.value)}
+          placeholder="Name (optional)"
+          style={{ ...field, width: 180 }}
+        />
+        <input
+          value={hpOverride}
+          onChange={(e) => setHpOverride(e.target.value)}
+          placeholder="HP (optional)"
+          style={{ ...field, width: 120 }}
+        />
+        <select
+          value={alignment}
+          onChange={(e) => setAlignment(e.target.value)}
+          style={field}
+        >
+          <option>Good</option>
+          <option>Neutral</option>
+          <option>Evil</option>
+        </select>
 
-      <input
-        type="number"
-        value={initiative}
-        onChange={(e) => setInitiative(e.target.value)}
-        placeholder="Init"
-        style={{ width: 70 }}
-        required
-      />
-
-      {/* Quantity 1..20 */}
-      <select value={quantity} onChange={(e) => setQuantity(Number(e.target.value))}>
-        {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
-          <option key={n} value={n}>{n}</option>
-        ))}
-      </select>
-
-      {/* Optional overrides */}
-      <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (optional)" />
-      <input type="number" value={health ?? ''} onChange={(e) => setHealth(e.target.value)} placeholder="HP (optional)" />
-      <select value={alignment} onChange={(e) => setAlignment(e.target.value)}>
-        <option value="Good">Good</option>
-        <option value="Bad">Bad</option>
-      </select>
-
-      <button type="submit">Add Creature(s)</button>
-    </form>
+        <button
+          onClick={onAdd}
+          style={{
+            padding: "8px 12px",
+            borderRadius: 10,
+            border: "1px solid rgba(255,255,255,0.15)",
+            background:
+              "linear-gradient(180deg, rgba(90,140,250,0.9), rgba(60,90,210,0.9))",
+            color: "white",
+            cursor: "pointer",
+          }}
+        >
+          Add Creature(s)
+        </button>
+      </div>
+    </div>
   );
 }

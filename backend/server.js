@@ -19,6 +19,12 @@
   app.use(cors());
   app.use(express.json());
 
+  // Mount the catalog API
+  app.use("/api/catalog", require("./routes/catalogRoutes"));
+
+  // ❌ REMOVE this (it starts a second server and prints wrong port)
+  // app.listen(3000, () => console.log("Server running on :3000"));
+
   // ---- In-memory store ----
   const encounters = {};
 
@@ -113,6 +119,12 @@
     res.json({ encounterId: id, playerToken });
   });
 
+    // serve uploaded images under /media
+    const mediaDir = path.join(__dirname, 'public');
+    app.use('/media', express.static(mediaDir));
+
+
+  // Serve built frontend (production)
   app.use(express.static(path.join(__dirname, '../frontend/build')));
   app.get('*', (req, res) =>
     res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'))
@@ -185,6 +197,7 @@
     });
   });
 
+  // ✅ Only this listen:
   server.listen(PORT, () => {
     console.log(`Server listening on http://localhost:${PORT}`);
   });
