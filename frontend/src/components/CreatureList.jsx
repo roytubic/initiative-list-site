@@ -1,20 +1,21 @@
 import React from 'react';
 import CreatureItem from './CreatureItem';
 
-const CreatureList = ({ creatures, onUpdate, onRemove }) => {
-    return (
-        <div>
-            {creatures.map((creature) => (
-                <CreatureItem
-                    key={creature.name}
-                    creature={creature}
-                    onUpdate={onUpdate}
-                    onRemove={onRemove} // Pass the remove function
-                />
-            ))}
-        </div>
-    );
+const CreatureList = ({ creatures, onUpdate, onRemove, dmControls, onPatch }) => {
+  return (
+    <div>
+      {creatures.map((c) => (
+        <CreatureItem
+          key={c.id || c.name}
+          creature={c}
+          onUpdate={onUpdate}
+          onRemove={onRemove}
+          dmControls={dmControls}
+          onPatch={onPatch}
+        />
+      ))}
+    </div>
+  );
 };
 
 export default CreatureList;
-

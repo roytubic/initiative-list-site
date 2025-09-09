@@ -1,14 +1,25 @@
-import React from 'react';
-import InitiativeTracker from './components/InitiativeTracker';
-import './App.css';
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import DMPage from "./components/dm-page";
+import PlayerPage from "./components/player-page";
 
-const App = () => {
-    return (
-        <div>
-            <h1>D&D Initiative Tracker</h1>
-            <InitiativeTracker />
-        </div>
-    );
-};
+function Home() {
+  return (
+    <div>
+      <h1>Initiative Tracker</h1>
+      <Link to="/dm"><button>DM</button></Link>
+      <Link to="/player"><button>Player</button></Link>
+    </div>
+  );
+}
 
-export default App;
+export default function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/dm" element={<DMPage />} />
+        <Route path="/player" element={<PlayerPage />} />
+      </Routes>
+    </Router>
+  );
+}
