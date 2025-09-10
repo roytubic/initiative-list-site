@@ -19,7 +19,7 @@ export default function InitiativeTracker() {
   // DM socket – only connect when we have id + token
   const socket = useMemo(() => {
     if (!encounterId || !dmToken) return null;
-    return io("http://localhost:3000", {
+    return io({
       autoConnect: false,
       auth: { role: "dm", encounterId, token: dmToken },
     });
@@ -169,7 +169,7 @@ export default function InitiativeTracker() {
       conditions: Array.isArray(c.conditions) ? c.conditions : [],
     }));
 
-    fetch(`http://localhost:3000/api/encounter/${encounterId}/creatures`, {
+    fetch(`/api/encounter/${encounterId}/creatures`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ dmToken, creatures: payload }),

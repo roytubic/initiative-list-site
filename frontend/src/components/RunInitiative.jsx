@@ -70,7 +70,7 @@ const RunInitiative = ({ creatures }) => {
     newWindowRef.current.document.close();
 
     // Create encounter on server
-    const created = await fetch("http://localhost:3000/api/encounter", {
+    const created = await fetch("/api/encounter", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ dmPass: "secret123" }),
@@ -79,7 +79,7 @@ const RunInitiative = ({ creatures }) => {
     const { id, code, dmToken } = created || {};
 
     // Seed creatures
-    await fetch(`http://localhost:3000/api/encounter/${id}/creatures`, {
+    await fetch(`/api/encounter/${id}/creatures`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ dmToken, creatures }),
@@ -230,7 +230,7 @@ const RunInitiative = ({ creatures }) => {
     doc.body.style.background = `#0f1115 url(${ORIGIN}/Background/goldrush.gif) center/cover fixed no-repeat`;
 
     // ------------ Socket in the PARENT window ------------
-    const socket = io("http://localhost:3000", {
+    const socket = io({
       auth: { role: "dm", encounterId: id, token: dmToken },
     });
 
