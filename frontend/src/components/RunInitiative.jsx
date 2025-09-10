@@ -92,18 +92,83 @@ const RunInitiative = ({ creatures }) => {
     const doc = newWindowRef.current.document;
     const ORIGIN = window.location.origin;
 
-    const classFor = (c) =>
-      c.alignment === "Evil" ? "evil" : c.type === "NPC" ? "npc" : "pc";
+/*************  ✨ Windsurf Command 🌟  *************/
+// Path to creature images, relative to the root of the server
+const IMG_DIR = "/creatureimages/";
+const toTitle = (s) => s.replace(/\b\w/g, (m) => m.toUpperCase());
+const candidatesForName = (name) => {
+  const raw = (name || "").trim();
+  const variants = [
+    raw,
+    raw.toLowerCase(),
+    raw.toUpperCase(),
+    toTitle(raw),
+  ];
+  // de-dup and map to .png URLs
+  const seen = new Set();
+  return variants
+    .map((v) => `${ORIGIN}${IMG_DIR}${encodeURIComponent(v)}.png`)
+    .filter((u) => (seen.has(u) ? false : (seen.add(u), true)));
+};
 
-    const imgUrl = (n) =>
-      ORIGIN + "/creatureimages/" + encodeURIComponent(n) + ".png";
+const imageNameFor = (c) => {
+  let n = (c.name || "").trim();
+  n = n.replace(/\s*-\s*\d+$/, ""); // remove "-N"
+  n = n.replace(/\s+\d+$/, "");     // remove " 2"
+  return n;
+};
 
-    const imageNameFor = (c) => {
-      let n = (c.name || "").trim();
-      n = n.replace(/\s*-\s*\d+$/, ""); // remove "-N"
-      n = n.replace(/\s+\d+$/, "");     // remove " 2"
-      return n;
-    };
+// case-insensitive alignment + css class
+const normAlign = (a) => (a || "").toLowerCase();
+const classFor = (c) =>
+  normAlign(c.alignment) === "evil" ? "evil" : c.type === "NPC" ? "npc" : "pc";
+const fallbackBaseFor = (c) =>
+  normAlign(c.alignment) === "evil" ? "Enemy" : "Ally";
+
+// Try each candidate until one loads
+const tryFirstThatLoads = (urls, onOk, onFail) => {
+  let i = 0;
+  const next = () => {
+    if (i >= urls.length) return onFail && onFail();
+    const u = urls[i++];
+    const img = new Image();
+    img.onload = () => onOk(u);
+    img.onerror = next;
+    img.src = u;
+  };
+  next();
+};
+
+// portrait loader
+const setPortraitBg = (el, c, isEnemy, isRevealed) => {
+  if (isEnemy && !isRevealed) {
+    // Hidden enemies show "Unknown.*" (try case variants)
+    tryFirstThatLoads(
+      candidatesForName("Unknown"),
+      (u) => (el.style.backgroundImage = `url(${u})`),
+      () => (el.style.backgroundImage = "") // nothing found
+    );
+    return;
+  }
+
+  const primaryList = candidatesForName(imageNameFor(c));
+  const fallbackList = candidatesForName(fallbackBaseFor(c));
+
+  // Start with the first fallback guess immediately so it’s never blank
+  el.style.backgroundImage = `url(${fallbackList[0]})`;
+
+  // Try to upgrade to the real portrait; else make sure a working fallback is set
+  tryFirstThatLoads(
+    primaryList,
+    (u) => (el.style.backgroundImage = `url(${u})`),
+    () =>
+      tryFirstThatLoads(
+        fallbackList,
+        (u) => (el.style.backgroundImage = `url(${u})`),
+        () => {} // keep whatever is set
+      )
+  );
+};
 
     let currentIndex = 0;
     let round = 1;
@@ -148,12 +213,8 @@ const RunInitiative = ({ creatures }) => {
         // portrait
         const portrait = doc.createElement("div");
         portrait.className = `portrait ring ${alnClass}`;
-        const imgName = imageNameFor(c);
         const isRevealed = isActive || revealed[c.id || c.name] === true;
-        portrait.style.backgroundImage =
-          isEnemy && !isRevealed
-            ? `url(${imgUrl("unknown")})`
-            : `url(${imgUrl(imgName)})`;
+        setPortraitBg(portrait, c, isEnemy, isRevealed);
 
         // name
         const name = doc.createElement("div");
