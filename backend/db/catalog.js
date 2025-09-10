@@ -2,7 +2,9 @@
 const Database = require("better-sqlite3");
 const path = require("path");
 
-const db = new Database(path.join(__dirname, "catalog.db"));
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, "catalog.db");
+
+const db = new Database(DB_PATH);
 db.pragma("journal_mode = WAL");
 
 // base table
@@ -56,7 +58,7 @@ const removeById = db.prepare(`DELETE FROM catalog_entries WHERE id = ?`);
 
 function wipeAll() {
   // Drop all data; you can do DELETE, or DROP & recreate if you prefer
-  db.prepare('DELETE FROM catalog').run();
+  db.prepare('DELETE FROM catalog_entries').run();
 }
 
 

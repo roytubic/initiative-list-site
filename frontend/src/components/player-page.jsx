@@ -301,7 +301,7 @@ export default function PlayerPage() {
   // Socket
   const socket = useMemo(() => {
     if (!encounter?.id || !playerToken) return null;
-    return io("http://localhost:3000", {
+    return io({
       autoConnect: false,
       auth: { role: "player", encounterId: encounter.id, token: playerToken }
     });
@@ -310,7 +310,7 @@ export default function PlayerPage() {
   // Join by code -> load encounter snapshot
   const joinEncounter = async () => {
     const joinCode = code.trim().toUpperCase();
-    const resp = await fetch(`http://localhost:3000/api/encounter/code/${encodeURIComponent(joinCode)}`);
+    const resp = await fetch(`/api/encounter/code/${encodeURIComponent(joinCode)}`);
     if (!resp.ok) {
       const text = await resp.text();
       alert(`Join failed (${resp.status}): ${text}`);
@@ -323,7 +323,7 @@ export default function PlayerPage() {
 
   // Claim a PC (only once)
   const claimCreature = async (creatureId) => {
-    const resp = await fetch(`http://localhost:3000/api/encounter/${encounter.id}/join`, {
+    const resp = await fetch(`/api/encounter/${encounter.id}/join`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

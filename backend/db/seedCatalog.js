@@ -45,12 +45,17 @@ const characters = [
 const npcs = [
   { name: 'Dwarf (m)', health: 30 },
   { name: 'Fire Genasi (M)', health: 25 },
-  { name: 'Gav', health: 49 },
+  { name: 'Gav', health: 53 },
   { name: 'Martith', health: 45 },
   { name: 'Half-elf (F)', health: 23 },
   { name: 'Lionin (M)', health: 28 },
   { name: 'Yuan-ti (f)', health: 66 },
-  { name: 'Zombie', health: 11 }
+  { name: 'Zombie', health: 11 },
+  { name: 'Wexill', health: 45 },
+  { name: 'Warhorse', health: 30 },
+  { name: 'Camel', health: 15 },
+  { name: 'Boar', health: 22 },
+  { name: 'Elk', health: 45 }
 ];
 
 const monsters = [
@@ -91,7 +96,13 @@ const monsters = [
   { name: 'Zombie Ogre', health: 85 },
   { name: 'Zombie', health: 22 },
   { name: 'Sprite', health: 7 },
-  { name: 'Shadowling', health: 22 }
+  { name: 'Shadowling', health: 22 },
+  { name: "Riding Drake", health: 45 },
+  { name: 'Giant Lizard', health: 20 },
+  { name: 'Giant Goat', health: 19 },
+  { name: 'Drake', health: 25 },
+  { name: 'Axebeak', health: 19 },
+  { name: 'Panther', health: 13 },
 ];
 
 function toRows(arr, type) {

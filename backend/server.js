@@ -22,7 +22,7 @@
   // Mount the catalog API
   app.use("/api/catalog", require("./routes/catalogRoutes"));
 
-  // ❌ REMOVE this (it starts a second server and prints wrong port)
+  // REMOVE this (it starts a second server and prints wrong port)
   // app.listen(3000, () => console.log("Server running on :3000"));
 
   // ---- In-memory store ----
@@ -120,8 +120,9 @@
   });
 
     // serve uploaded images under /media
-    const mediaDir = path.join(__dirname, 'public');
-    app.use('/media', express.static(mediaDir));
+    const publicDir = path.join(__dirname, '../public');
+    app.use('/public', express.static(publicDir));
+    app.use('/creatureimages', express.static(path.join(publicDir, 'creatureimages')));
 
 
   // Serve built frontend (production)

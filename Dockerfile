@@ -10,27 +10,37 @@ RUN npm run build
 FROM node:20-bullseye-slim AS backend-deps
 WORKDIR /app/backend
 COPY backend/package*.json ./
+# If better-sqlite3 is in deps and needs tools, add build essentials here.
+# RUN apt-get update && apt-get install -y --no-install-recommends python3 build-essential && rm -rf /var/lib/apt/lists/*
 RUN npm install --omit=dev
 
 # --------- Final image ---------
 FROM node:20-bullseye-slim
 WORKDIR /app
 
-# Backend code (server.js, routes, etc.)
-COPY backend ./
+# Copy backend code into /app/backend  (KEEP THE SUBFOLDER)
+COPY backend ./backend
 
-# Backend node_modules from deps stage
-COPY --from=backend-deps /app/backend/node_modules ./node_modules
+# Bring backend node_modules alongside it
+COPY --from=backend-deps /app/backend/node_modules ./backend/node_modules
 
-# Ensure dirs exist
-RUN mkdir -p /app/public /app/db /frontend/build
+# Optional: CLI sqlite (handy for debugging in a shell)
+# RUN apt-get update && apt-get install -y --no-install-recommends sqlite3 && rm -rf /var/lib/apt/lists/*
 
-# Put the React build where the server expects it: /frontend/build
-COPY --from=build-frontend /app/frontend/build/ /frontend/build/
+# Seed config: bake a pre-seeded DB into the image
+ENV DB_PATH=/app/backend/db/catalog.db
+ENV FORCE_RESEED=1
+RUN node backend/db/seedCatalog.js
 
-# Copy all public assets used by the app (images, backgrounds, etc.)
+# Ensure dirs; copy frontend build + public assets
+RUN mkdir -p /app/public /app/frontend/build
+COPY --from=build-frontend /app/frontend/build/ /app/frontend/build/
 COPY frontend/public/ ./public/
 
 ENV NODE_ENV=production
 EXPOSE 3000
-CMD ["node", "server.js"]
+
+# Run the server from the backend folder
+WORKDIR /app/backend
+EXPOSE 3000
+CMD ["./start.sh"]
