@@ -171,7 +171,6 @@ const setPortraitBg = (el, c, isEnemy, isRevealed) => {
 };
 
     let currentIndex = 0;
-    let currentTurnId = null; 
     let round = 1;
     const revealed = Object.create(null);
     let live = creatures || [];
@@ -196,8 +195,8 @@ const setPortraitBg = (el, c, isEnemy, isRevealed) => {
       doc.getElementById("join").textContent = "Join Code: " + (code || "");
 
       list.innerHTML = "";
-      r.forEach((c) => {
-        const isActive = c.id === currentTurnId;
+      r.forEach((c, idx) => {
+        const isActive = idx === currentIndex;
         const alnClass = classFor(c);
         const isEnemy = alnClass === "evil";
         const isGoodNPC = alnClass === "npc";
@@ -365,10 +364,7 @@ const setPortraitBg = (el, c, isEnemy, isRevealed) => {
 
     socket.on("turn:state", ({ round: r, turnIndex }) => {
       round = r;
-      const order = [...live].sort((a, b) => (b.initiative ?? 0) - (a.initiative ?? 0));
-      const c = order[turnIndex || 0];
-      currentTurnId = c ? c.id : null
-      
+      currentIndex = turnIndex || 0;
       revealCurrentIfEnemy();
       paint();
       scrollActiveIntoView();
