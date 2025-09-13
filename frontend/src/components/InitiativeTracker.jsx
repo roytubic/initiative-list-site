@@ -16,6 +16,11 @@ export default function InitiativeTracker() {
   const [dmToken, setDmToken] = useState(null);
   const [joinCode, setJoinCode] = useState(null);
 
+  const uid = () =>  (crypto?.randomUUID?.() || `c_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`);
+
+  const [activeId, setActiveId] = useState(null);
+  const toId = (v) => (v == null ? null : String(v));
+
   // DM socket – only connect when we have id + token
   const socket = useMemo(() => {
     if (!encounterId || !dmToken) return null;
@@ -44,20 +49,36 @@ export default function InitiativeTracker() {
     socket.connect();
 
     socket.on("encounter:state", (s) => {
-      const mapped = (s.creatures || [])
-        .filter(Boolean)
-        .map((c) => ({
-          id: c.id,
-          name: c.name,
-          type: c.type,
-          alignment: c.alignment,
-          initiative: c.initiative,
-          totalHealth: c.total_hp,
-          health: c.current_hp,
-          tempHP: c.temp_hp,
-          conditions: c.conditions || [],
-        }));
+      const mapped = (s.creatures || []).filter(Boolean).map((c) => ({
+        id: c.id || uid(),    // ensure unique id
+        name: c.name,
+        type: c.type,
+        alignment: c.alignment,
+        initiative: c.initiative,
+        totalHealth: c.total_hp,
+        health: c.current_hp,
+        tempHP: c.temp_hp,
+        conditions: c.conditions || [],
+      }));
       setCreatures(mapped);
+      // Accept any of these from your server (use whichever you emit):
+      setActiveId(
+        toId(
+          s.activeCreatureId ??
+          s.active_id ??
+          s.turn?.activeId ??
+          s.turn?.active_id ??
+          null
+        )
+      );
+    });
+
+    socket.on("turn:state", (t) => {
+      setActiveId(toId(t.activeCreatureId ?? t.active_id ?? t.id ?? null));
+    });
+
+    socket.on("turn:update", (t) => {
+      setActiveId(toId(t.activeCreatureId ?? t.active_id ?? t.id ?? null));
     });
 
     socket.on("creature:update", ({ creatureId, patch }) => {
@@ -88,67 +109,52 @@ export default function InitiativeTracker() {
 
   // ---------- Add / Update / Remove with hardening ----------
   const addCreatures = (proto, qty) => {
-    if (!proto || typeof proto.name !== "string" || proto.name.trim() === "") {
-      console.warn("addCreatures ignored invalid proto:", proto);
-      return;
-    }
-
+    if (!proto || !proto.name?.trim()) return;
     setCreatures((prev) => {
       const next = prev.filter(Boolean).slice();
       const base = stripSuffix(proto.name);
       const count = Math.max(1, Math.min(20, Number(qty) || 1));
 
       for (let k = 0; k < count; k++) {
-        const sameBaseIdxs = next
-          .map((c, i) => ({ c, i }))
-          .filter(({ c }) => c && stripSuffix(c.name) === base);
-
-        if (sameBaseIdxs.length === 0) {
-          next.push({ ...proto, name: base });
+        const sameBase = next.filter((c) => stripSuffix(c.name) === base);
+        if (sameBase.length === 0) {
+          next.push({ ...proto, id: uid(), name: base });
         } else {
-          const idxUnsuffixed = sameBaseIdxs.find(
-            ({ c }) => c && !hasSuffix(c.name)
-          );
-          if (idxUnsuffixed) {
-            const { i } = idxUnsuffixed;
-            next[i] = { ...next[i], name: `${base}-1` };
+          if (sameBase.some((c) => !hasSuffix(c.name))) {
+            next.forEach((c) => {
+              if (c && stripSuffix(c.name) === base && !hasSuffix(c.name))
+                c.name = `${base}-1`;
+            });
           }
-
-          let maxN = 0;
-          for (const c of next) {
-            if (!c) continue;
-            if (stripSuffix(c.name) !== base) continue;
-            const m = (c.name || "").match(/-(\d+)$/);
-            if (m) maxN = Math.max(maxN, parseInt(m[1], 10));
-          }
-
-          next.push({ ...proto, name: `${base}-${maxN + 1}` });
+          const maxN = next.reduce((m, c) => {
+            if (!c || stripSuffix(c.name) !== base) return m;
+            const match = /-(\d+)$/.exec(c.name || "");
+            return match ? Math.max(m, parseInt(match[1], 10)) : m;
+          }, 0);
+          next.push({ ...proto, id: uid(), name: `${base}-${maxN + 1}` });
         }
       }
 
       const cleaned = next
         .filter(Boolean)
         .sort((a, b) => (b.initiative ?? 0) - (a.initiative ?? 0));
-
       scheduleServerSync(cleaned);
       return cleaned;
     });
   };
 
-  const handleRemove = (name) => {
+  const handleRemove = (id) => {
     setCreatures((prev) => {
-      const next = prev.filter(Boolean).filter((c) => c.name !== name);
+      const next = prev.filter((c) => c.id !== id);
       scheduleServerSync(next);
       return next;
     });
   };
 
-  const handleUpdate = (updatedCreature) => {
-    if (!updatedCreature) return;
+  const handleUpdate = (updated) => {
+    if (!updated?.id) return;
     setCreatures((prev) => {
-      const next = prev
-        .filter(Boolean)
-        .map((c) => (c.name === updatedCreature.name ? updatedCreature : c));
+      const next = prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c));
       scheduleServerSync(next);
       return next;
     });
@@ -208,10 +214,11 @@ export default function InitiativeTracker() {
           <div style={styles.listChrome}>
             <CreatureList
               creatures={creatures}
+              activeId={activeId} 
               onUpdate={handleUpdate}
               onRemove={handleRemove}
-              dmControls
-              onPatch={emitPatch}
+              dmControls={!!socket}
+              onPatch={socket ? emitPatch : undefined}
             />
           </div>
         </div>

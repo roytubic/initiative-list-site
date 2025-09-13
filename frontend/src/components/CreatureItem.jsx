@@ -137,7 +137,26 @@ const CreatureItem = ({ creature, onUpdate, onRemove, dmControls, onPatch }) => 
         <span> {(creature.conditions || []).join(', ')}</span>
       </div>
 
-      <button style={{ color: 'red' }} onClick={() => onRemove(creature.name)}>Remove</button>
+      <button style={{ color: 'red' }} onClick={() => onRemove(creature.id)}>Remove</button>
+
+      <button
+        onClick={() => onUpdate({ ...creature, alignment: creature.alignment === "Good" ? "Evil" : "Good" })}
+        style={{
+          padding: "4px 10px",
+          borderRadius: 999,
+          border: "1px solid rgba(255,255,255,0.18)",
+          background: creature.alignment === "Good"
+            ? "linear-gradient(180deg, rgba(50,180,120,.9), rgba(30,130,90,.9))"
+            : "linear-gradient(180deg, rgba(210,70,70,.9), rgba(160,40,40,.9))",
+          color: "#fff",
+          cursor: "pointer",
+          fontSize: 12,
+        }}
+        title="Toggle Good/Evil"
+      >
+        {creature.alignment === "Good" ? "Good" : "Evil"}
+      </button>
+
     </div>
   );
 };

@@ -171,6 +171,7 @@ const setPortraitBg = (el, c, isEnemy, isRevealed) => {
 };
 
     let currentIndex = 0;
+    let currentTurnId = null; 
     let round = 1;
     const revealed = Object.create(null);
     let live = creatures || [];
@@ -195,8 +196,8 @@ const setPortraitBg = (el, c, isEnemy, isRevealed) => {
       doc.getElementById("join").textContent = "Join Code: " + (code || "");
 
       list.innerHTML = "";
-      r.forEach((c, idx) => {
-        const isActive = idx === currentIndex;
+      r.forEach((c) => {
+        const isActive = c.id === currentTurnId;
         const alnClass = classFor(c);
         const isEnemy = alnClass === "evil";
         const isGoodNPC = alnClass === "npc";
@@ -287,6 +288,31 @@ const setPortraitBg = (el, c, isEnemy, isRevealed) => {
       });
     }
 
+// Keep the currently-active row at the top of the scrollable list
+    function scrollActiveIntoView() {
+      const list = doc.getElementById("list");
+      if (!list) return;
+
+      const active = list.querySelector(".row.active");
+      if (!active) return;
+
+      // account for list padding so the row really sits at the visible top
+      const paddingTop = parseFloat(doc.defaultView.getComputedStyle(list).paddingTop || "0") || 0;
+
+      // where we WANT the scrollTop to be so the active row is at the top edge
+      const target = Math.max(0, active.offsetTop - paddingTop);
+
+      // don’t scroll past the bottom; clamp to the max possible
+      const maxScroll = Math.max(0, list.scrollHeight - list.clientHeight);
+      const desired = Math.min(target, maxScroll);
+
+      // avoid micro-jitters if we're basically already there
+      if (Math.abs(list.scrollTop - desired) > 4) {
+        list.scrollTo({ top: desired, behavior: "smooth" });
+      }
+    }
+
+
     // Set background art in popup
     doc.body.style.background = `#0f1115 url(${ORIGIN}/Background/goldrush.gif) center/cover fixed no-repeat`;
 
@@ -313,6 +339,7 @@ const setPortraitBg = (el, c, isEnemy, isRevealed) => {
       if (typeof state.round === "number") round = state.round;
       revealCurrentIfEnemy();
       paint();
+      scrollActiveIntoView();
     });
 
     socket.on("creature:update", ({ creatureId, patch }) => {
@@ -333,18 +360,24 @@ const setPortraitBg = (el, c, isEnemy, isRevealed) => {
           : c
       );
       paint();
+      scrollActiveIntoView();
     });
 
     socket.on("turn:state", ({ round: r, turnIndex }) => {
       round = r;
-      currentIndex = turnIndex || 0;
+      const order = [...live].sort((a, b) => (b.initiative ?? 0) - (a.initiative ?? 0));
+      const c = order[turnIndex || 0];
+      currentTurnId = c ? c.id : null
+      
       revealCurrentIfEnemy();
       paint();
+      scrollActiveIntoView();
     });
 
     // first paint
     revealCurrentIfEnemy();
     paint();
+    scrollActiveIntoView();
   };
 
   // keep popup aware if creatures update locally (harmless pre-encounter)

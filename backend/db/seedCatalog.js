@@ -58,7 +58,9 @@ const npcs = [
   { name: 'Warhorse', health: 30 },
   { name: 'Camel', health: 15 },
   { name: 'Boar', health: 22 },
-  { name: 'Elk', health: 45 }
+  { name: 'Elk', health: 45 },
+  { name: 'Carnex', health: 123 },
+  { name: 'Druandin', health: 162 },
 ];
 
 const monsters = [
@@ -106,6 +108,33 @@ const monsters = [
   { name: 'Drake', health: 25 },
   { name: 'Axebeak', health: 19 },
   { name: 'Panther', health: 13 },
+  { name: 'Ochre Jelly', health: 45 },
+  { name: 'Stirge', health: 5 },
+  { name: 'Awakened Armour', health: 33 },
+  { name: 'Azer Pyromancer', health: 97 },
+  { name: 'Azer Sentinel', health: 39 }, 
+  { name: 'Chimera', health: 114 },
+  { name: 'Cloaker', health: 91 },
+  { name: 'Darkmanlte', health: 22 },
+  { name: 'Drow Warrior', health: 32 },
+  { name: 'Duergar Warrior', health: 82 },
+  { name: 'Fire Elemental', health: 93 },
+  { name: 'Fire Snake', health: 27 },
+  { name: 'Giant Spider', health: 26 },
+  { name: 'Grick', health: 54 },
+  { name: 'Grimlock', health: 11 },
+  { name: 'Hook Horror', health: 75 },
+  { name: 'Myconid adult', health: 16 },
+  { name: 'Myconid sprout', health: 3 },
+  { name: 'Myconid Sovereign', health: 45 },
+  { name: 'Ogre', health: 68 },
+  { name: 'Needle Blight', health: 16 },
+  { name: 'Salamander', health: 90 },
+  { name: 'Spectator', health: 45 },
+  { name: 'Tough', health: 32 },
+  { name: 'Tough Boss', health: 82 },
+  { name: 'Troll', health: 94 },
+  { name: 'Troll Limb', health: 22 },
 ];
 
 function toRows(arr, type) {
