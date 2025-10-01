@@ -65,6 +65,7 @@ const npcs = [
 
 const monsters = [
   { name: 'Wolf', health: 11 },
+  { name: 'Ankylosaurus', health: 68 },
   { name: 'Bandit Captain', health: 65 },
   { name: 'Banshee', health: 58 },
   { name: 'Bearded devil', health: 52 },
@@ -131,10 +132,12 @@ const monsters = [
   { name: 'Needle Blight', health: 16 },
   { name: 'Salamander', health: 90 },
   { name: 'Spectator', health: 45 },
+  { name: 'T-rex', health: 136 },
   { name: 'Tough', health: 32 },
   { name: 'Tough Boss', health: 82 },
   { name: 'Troll', health: 94 },
   { name: 'Troll Limb', health: 22 },
+  { name: 'Velociraptor', health: 10 },
 ];
 
 function toRows(arr, type) {

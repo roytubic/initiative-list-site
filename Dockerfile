@@ -10,37 +10,33 @@ RUN npm run build
 FROM node:20-bullseye-slim AS backend-deps
 WORKDIR /app/backend
 COPY backend/package*.json ./
-# If better-sqlite3 is in deps and needs tools, add build essentials here.
+# If better-sqlite3 or node-gyp is in deps, uncomment next line:
 # RUN apt-get update && apt-get install -y --no-install-recommends python3 build-essential && rm -rf /var/lib/apt/lists/*
 RUN npm install --omit=dev
 
 # --------- Final image ---------
-FROM node:20-bullseye-slim
+FROM node:20-bullseye-slim AS runtime
 WORKDIR /app
 
-# Copy backend code into /app/backend  (KEEP THE SUBFOLDER)
+# Copy backend code (keep subfolder) and its node_modules
 COPY backend ./backend
-
-# Bring backend node_modules alongside it
 COPY --from=backend-deps /app/backend/node_modules ./backend/node_modules
 
-# Optional: CLI sqlite (handy for debugging in a shell)
-# RUN apt-get update && apt-get install -y --no-install-recommends sqlite3 && rm -rf /var/lib/apt/lists/*
-
-# Seed config: bake a pre-seeded DB into the image
-ENV DB_PATH=/app/backend/db/catalog.db
-ENV FORCE_RESEED=1
-RUN node backend/db/seedCatalog.js
-
-# Ensure dirs; copy frontend build + public assets
+# Copy built frontend + public assets
 RUN mkdir -p /app/public /app/frontend/build
 COPY --from=build-frontend /app/frontend/build/ /app/frontend/build/
 COPY frontend/public/ ./public/
 
-ENV NODE_ENV=production
-EXPOSE 3000
+# Runtime env — seed at runtime into the VOLUME, not during build
+ENV NODE_ENV=production \
+    PORT=3000 \
+    DB_PATH=/data/catalog.db
 
-# Run the server from the backend folder
+# Run from backend dir
 WORKDIR /app/backend
-EXPOSE 3000
-CMD ["./start.sh"]
+
+# Make sure the start script is executable
+RUN chmod +x /app/backend/start.sh
+
+# IMPORTANT: run the script with bash (not node)
+CMD ["bash", "-lc", "./start.sh"]
