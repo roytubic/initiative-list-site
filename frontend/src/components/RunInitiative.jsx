@@ -316,9 +316,11 @@ const setPortraitBg = (el, c, isEnemy, isRevealed) => {
     doc.body.style.background = `#0f1115 url(${ORIGIN}/Background/goldrush.gif) center/cover fixed no-repeat`;
 
     // ------------ Socket in the PARENT window ------------
-    const socket = io({
+    const socket = io(window.location.origin, {
+      path: "/socket.io",
       auth: { role: "dm", encounterId: id, token: dmToken },
     });
+
 
     socket.on("connect", () => console.log("DM socket connected (parent)"));
 
@@ -341,33 +343,51 @@ const setPortraitBg = (el, c, isEnemy, isRevealed) => {
       scrollActiveIntoView();
     });
 
-    socket.on("creature:update", ({ creatureId, patch }) => {
-      live = live.map((c) =>
-        c.id === creatureId
-          ? {
-              ...c,
-              current_hp:
-                typeof patch.current_hp === "number"
-                  ? patch.current_hp
-                  : c.current_hp,
-              temp_hp:
-                typeof patch.temp_hp === "number" ? patch.temp_hp : c.temp_hp,
-              conditions: Array.isArray(patch.conditions)
-                ? patch.conditions
-                : c.conditions,
-            }
-          : c
-      );
-      paint();
-      scrollActiveIntoView();
-    });
+    socket.on("turn:update", (t) => {
+      const { round: r, turnIndex, activeCreatureId } = t || {};
+      round = r ?? round;
+      currentIndex = typeof turnIndex === "number" ? turnIndex : 0;
 
-    socket.on("turn:state", ({ round: r, turnIndex }) => {
-      round = r;
-      currentIndex = turnIndex || 0;
+      const sorted = [...live].sort((a, b) => (b.initiative ?? 0) - (a.initiative ?? 0));
+      const idAtIndex = sorted[currentIndex]?.id ?? null;
+
       revealCurrentIfEnemy();
       paint();
       scrollActiveIntoView();
+
+      console.log("➡️ Turn update:", { turnIndex: currentIndex, id: idAtIndex });
+
+      if (window.opener) {
+        const msg = {
+          turnIndex: currentIndex,
+          activeCreatureId: activeCreatureId ?? idAtIndex,
+        };
+        window.opener.postMessage({ type: "TURN_STATE", ...msg }, "*");
+        window.opener.postMessage({ type: "TURN_UPDATE", ...msg }, "*");
+      }
+    });
+
+
+    socket.on("turn:state", ({ round: r, turnIndex, activeCreatureId }) => {
+      round = r;
+      currentIndex = typeof turnIndex === "number" ? turnIndex : 0;
+
+      const sorted = [...live].sort((a, b) => (b.initiative ?? 0) - (a.initiative ?? 0));
+      const idAtIndex = sorted[currentIndex]?.id ?? null;
+
+      revealCurrentIfEnemy();
+      paint();
+      scrollActiveIntoView();
+
+      console.log("➡️ Turn state:", { turnIndex: currentIndex, id: idAtIndex });
+
+      if (window.opener) {
+        window.opener.postMessage({
+          type: "TURN_STATE",
+          turnIndex: currentIndex,
+          activeCreatureId: activeCreatureId ?? idAtIndex,
+        }, "*");
+      }
     });
 
     // first paint

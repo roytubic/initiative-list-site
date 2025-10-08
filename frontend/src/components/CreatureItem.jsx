@@ -41,9 +41,28 @@ const CreatureItem = ({ creature, onUpdate, onRemove, dmControls, onPatch }) => 
   // DM actions emit patches to the backend (authoritative)
   const applyHp = () => {
     if (!dmControls || !onPatch) return;
-    const next = clamp((currentHP ?? 0) + hpAmount, 0, total);
-    onPatch(creature.id, { current_hp: next });
+
+    let dmg = hpAmount ?? 0;
+    let nextTemp = tempHP ?? 0;
+    let nextHP = currentHP ?? 0;
+
+    if (dmg < 0) { // damage
+      dmg = Math.abs(dmg);
+
+      if (nextTemp > 0) {
+        const tempUsed = Math.min(nextTemp, dmg);
+        nextTemp -= tempUsed;
+        dmg -= tempUsed;
+      }
+
+      nextHP = clamp(nextHP - dmg, 0, total);
+    } else { // healing
+      nextHP = clamp(nextHP + dmg, 0, total);
+    }
+
+    onPatch(creature.id, { current_hp: nextHP, temp_hp: nextTemp });
   };
+
 
   const addTemp = () => {
     if (!dmControls || !onPatch) return;
@@ -75,6 +94,31 @@ const CreatureItem = ({ creature, onUpdate, onRemove, dmControls, onPatch }) => 
   return (
     <div className="creature-item" style={{ display: 'flex', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: 10 }}>
       <h3 style={{ minWidth: 160 }}>{creature.name}</h3>
+
+      <div>
+        <label>Initiative: </label>
+        <input
+          type="number"
+          value={creature.initiative ?? 0}
+          onChange={(e) => {
+            const val = parseInt(e.target.value, 10) || 0;
+            // Local update
+            onUpdate({ ...creature, initiative: val });
+            // DM socket patch
+            if (dmControls && onPatch) onPatch(creature.id, { initiative: val });
+          }}
+          style={{
+            width: 60,
+            padding: "4px 6px",
+            borderRadius: 6,
+            border: "1px solid rgba(255,255,255,0.18)",
+            background: "rgba(255,255,255,0.06)",
+            color: "#eaeaea",
+            textAlign: "center",
+          }}
+        />
+      </div>
+
 
       {/* Read-only HP display (source of truth is server/popup) */}
       <div><strong>HP:</strong> {Number(creature.health ?? creature.current_hp ?? 0)} / {total}</div>

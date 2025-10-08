@@ -37,7 +37,8 @@ const characters = [
   { name: 'Jeff', health: 45 },
   { name: 'Tel', health: 53 },
   { name: 'Elion', health: 28 },
-  { name: 'Gurdil', health: 58 },
+  { name: 'Gav', health: 53 },
+  { name: 'Martith', health: 45 },
   { name: 'Hugo', health: 59 },
   { name: 'Jhaz', health: 39 }
 ];
@@ -45,8 +46,8 @@ const characters = [
 const npcs = [
   { name: 'Dwarf (m)', health: 30 },
   { name: 'Fire Genasi (M)', health: 25 },
-  { name: 'Gav', health: 53 },
-  { name: 'Martith', health: 45 },
+  // { name: 'Gav', health: 53 },
+  // { name: 'Martith', health: 45 },
   { name: 'Half-elf (F)', health: 23 },
   { name: 'Human (F)', health: 28 },
   { name: 'Human (M)', health: 28 },

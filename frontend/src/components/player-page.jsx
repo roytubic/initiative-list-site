@@ -301,9 +301,14 @@ export default function PlayerPage() {
   // Socket
   const socket = useMemo(() => {
     if (!encounter?.id || !playerToken) return null;
-    return io({
+    return io(window.location.origin, {
+      path: "/socket.io",
       autoConnect: false,
-      auth: { role: "player", encounterId: encounter.id, token: playerToken }
+      auth: {
+        role: "player",
+        encounterId: encounter.id,
+        token: playerToken,
+      },
     });
   }, [encounter?.id, playerToken]);
 

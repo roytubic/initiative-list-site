@@ -12,6 +12,8 @@ const hasSuffix = (name) => /-\d+$/.test(name || "");
 export default function InitiativeTracker() {
   const [creatures, setCreatures] = useState([]);
 
+  const [turnIndex, setTurnIndex] = useState(null);
+
   const [encounterId, setEncounterId] = useState(null);
   const [dmToken, setDmToken] = useState(null);
   const [joinCode, setJoinCode] = useState(null);
@@ -24,11 +26,35 @@ export default function InitiativeTracker() {
   // DM socket – only connect when we have id + token
   const socket = useMemo(() => {
     if (!encounterId || !dmToken) return null;
-    return io({
+
+    const s = io({
       autoConnect: false,
+      path: "/socket.io", // explicitly set path
+      transports: ["websocket", "polling"], // fallback to polling
       auth: { role: "dm", encounterId, token: dmToken },
+      query: { role: "dm", encounterId, token: dmToken }, // fallback if server reads query params
     });
+
+    return s;
   }, [encounterId, dmToken]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const onConnect = () => console.log("✅ DM socket connected");
+    const onError = (err) => console.warn("⚠️ DM socket connect_error:", err?.message || err);
+
+    socket.on("connect", onConnect);
+    socket.on("connect_error", onError);
+
+    socket.connect();
+
+    return () => {
+      socket.off("connect", onConnect);
+      socket.off("connect_error", onError);
+      socket.disconnect();
+    };
+  }, [socket]);
 
   // Receive ENCOUNTER_READY from the popup (with id + token + code)
   useEffect(() => {
@@ -37,11 +63,31 @@ export default function InitiativeTracker() {
         setEncounterId(e.data.id);
         setDmToken(e.data.dmToken);
         setJoinCode(e.data.code || null);
+      } else if (["TURN_STATE", "TURN_UPDATE"].includes(e.data?.type)) {
+        if (typeof e.data.turnIndex === "number") setTurnIndex(e.data.turnIndex);
+        if (e.data.activeCreatureId != null) setActiveId(toId(e.data.activeCreatureId));
       }
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
   }, []);
+
+  useEffect(() => {
+    if (turnIndex == null) return;
+
+    const order = [...creatures]
+      .filter(Boolean)
+      .sort(
+        (a, b) =>
+          (b.initiative ?? 0) - (a.initiative ?? 0) ||
+          String(a.name ?? "").localeCompare(String(b.name ?? "")) ||
+          String(a.id ?? "").localeCompare(String(b.id ?? ""))
+      );
+
+    const idAtIndex = order[turnIndex]?.id ?? null;
+    setActiveId(toId(idAtIndex));
+  }, [creatures, turnIndex]);
+
 
   // Connect DM socket & keep list synced from server
   useEffect(() => {
@@ -62,23 +108,29 @@ export default function InitiativeTracker() {
       }));
       setCreatures(mapped);
       // Accept any of these from your server (use whichever you emit):
-      setActiveId(
-        toId(
-          s.activeCreatureId ??
-          s.active_id ??
-          s.turn?.activeId ??
-          s.turn?.active_id ??
-          null
-        )
-      );
+      const maybeActiveId =
+        s.activeCreatureId ??
+        s.active_id ??
+        s.turn?.activeId ??
+        s.turn?.active_id ??
+        null;
+      if (maybeActiveId != null) setActiveId(toId(maybeActiveId));
+
+      if (typeof s.turn?.turnIndex === "number") {
+        setTurnIndex(s.turn.turnIndex);
+      }
     });
 
     socket.on("turn:state", (t) => {
-      setActiveId(toId(t.activeCreatureId ?? t.active_id ?? t.id ?? null));
+      if (typeof t.turnIndex === "number") setTurnIndex(t.turnIndex);
+      const maybeId = t.activeCreatureId ?? t.active_id ?? t.id ?? null;
+      if (maybeId != null) setActiveId(toId(maybeId));
     });
 
     socket.on("turn:update", (t) => {
-      setActiveId(toId(t.activeCreatureId ?? t.active_id ?? t.id ?? null));
+      if (typeof t.turnIndex === "number") setTurnIndex(t.turnIndex);
+      const maybeId = t.activeCreatureId ?? t.active_id ?? t.id ?? null;
+      if (maybeId != null) setActiveId(toId(maybeId));
     });
 
     socket.on("creature:update", ({ creatureId, patch }) => {
@@ -106,6 +158,11 @@ export default function InitiativeTracker() {
 
     return () => socket.disconnect();
   }, [socket]);
+
+  useEffect(() => {
+    console.log("ActiveId:", activeId);
+    console.log("TurnIndex:", turnIndex);
+  }, [activeId, turnIndex]);
 
   // ---------- Add / Update / Remove with hardening ----------
   const addCreatures = (proto, qty) => {
@@ -154,7 +211,7 @@ export default function InitiativeTracker() {
   const handleUpdate = (updated) => {
     if (!updated?.id) return;
     setCreatures((prev) => {
-      const next = prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c));
+      const next = prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)).sort((a,b)=> (b.initiative??0) - (a.initiative??0));
       scheduleServerSync(next);
       return next;
     });
@@ -217,7 +274,7 @@ export default function InitiativeTracker() {
               activeId={activeId} 
               onUpdate={handleUpdate}
               onRemove={handleRemove}
-              dmControls={!!socket}
+              dmControls={!!socket?.connected}
               onPatch={socket ? emitPatch : undefined}
             />
           </div>
@@ -230,10 +287,10 @@ export default function InitiativeTracker() {
         </div>
 
         <div style={{ marginTop: 20, textAlign: "center" }}>
-          <button onClick={prevTurn} disabled={!socket} style={styles.prevBtn}>
+          <button onClick={prevTurn} disabled={!socket?.connected} style={styles.prevBtn}>
             ⬅ Prev Turn
           </button>{" "}
-          <button onClick={nextTurn} disabled={!socket} style={styles.nextBtn}>
+          <button onClick={nextTurn} disabled={!socket?.connected} style={styles.nextBtn}>
             Next Turn ➡
           </button>
         </div>

@@ -171,14 +171,29 @@
       if (!c) return;
       if (role === 'player' && !allowedCreatureIds.has(creatureId)) return;
 
-      if (typeof patch.current_hp === 'number') c.current_hp = Math.max(0, Math.min(patch.current_hp, c.total_hp));
-      if (typeof patch.temp_hp === 'number') c.temp_hp = Math.max(0, patch.temp_hp);
-      if (Array.isArray(patch.conditions)) c.conditions = patch.conditions;
+      // Update server-side copy safely
+      if (typeof patch.current_hp === 'number') {
+        c.current_hp = Math.max(0, Math.min(patch.current_hp, c.total_hp));
+      }
+      if (typeof patch.temp_hp === 'number') {
+        c.temp_hp = Math.max(0, patch.temp_hp);
+      }
+      if (Array.isArray(patch.conditions)) {
+        c.conditions = patch.conditions;
+      }
 
+      // ✅ Broadcast to *all* clients (including sender)
       io.to(room).emit('creature:update', {
         creatureId,
-        patch: { current_hp: c.current_hp, temp_hp: c.temp_hp, conditions: c.conditions }
+        patch: {
+          current_hp: c.current_hp,
+          temp_hp: c.temp_hp,
+          conditions: c.conditions,
+        },
       });
+
+      // Optional: also keep DM state snapshot fresh for re-sync
+      io.to(room).emit('encounter:state', snapshot(enc));
     });
 
     socket.on('turn:next', () => {
