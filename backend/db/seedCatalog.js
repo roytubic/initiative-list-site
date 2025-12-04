@@ -137,7 +137,6 @@ const monsters = [
   { name: 'Troll', health: 94 },
   { name: 'Troll Limb', health: 22 },
   { name: 'Velociraptor', health: 10 },
-  { name: 'Spectator', health: 45 },
   { name: 'Warforged-corpse', health: 13 },
   
 ];
