@@ -36,9 +36,9 @@ const catalog = require("./catalog");
 const characters = [
   { name: 'Jeff', health: 52 },
   { name: 'Tel', health: 61 },
-  { name: 'Elion', health: 34 },
   { name: 'Hugo', health: 68 },
-  { name: 'Jhaz', health: 45 }
+  { name: 'Jhaz', health: 45 },
+  { name: 'Thalion', health: 74 },
 ];
 
 const npcs = [
@@ -138,6 +138,7 @@ const monsters = [
   { name: 'Troll Limb', health: 22 },
   { name: 'Velociraptor', health: 10 },
   { name: 'Warforged-corpse', health: 13 },
+  { name: 'Yochlol ', health: 153 },
   
 ];
 
